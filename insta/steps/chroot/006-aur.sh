@@ -2,7 +2,12 @@
 set -euo pipefail
 
 # Source configuration file first, then common.sh to combine packages
-source "$(dirname "$0")/../../confs/$(basename "${CONFIG_FILE:-default.sh}")"
+# Load default config first
+DEFAULT_CONFIG="$(dirname "$0")/../../confs/default.sh"
+if [[ -f "$DEFAULT_CONFIG" ]]; then
+    source "$DEFAULT_CONFIG"
+fi
+source "$(dirname "$0")/../../confs/$(basename "${CONFIG_FILE:-workstation.sh}")"
 source "$(dirname "$0")/../../utils/common.sh"
 
 # Arch Linux Chroot AUR Script

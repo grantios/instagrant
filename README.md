@@ -28,7 +28,7 @@ DISK=/dev/sda ./insta/run.sh
 
 - Arch Linux live USB
 - Decent internet connection
-- Target disk with at least 200GB space
+- Target disk with at least 165GB space
 
 ## License
 

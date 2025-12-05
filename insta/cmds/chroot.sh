@@ -9,24 +9,8 @@ if [[ -z "${INSTA_TOPLVL:-}" ]]; then
     INSTA_TOPLVL="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 fi
 
-# Set config file if not set
-if [[ -z "${CONFIG_FILE:-}" ]]; then
-    CONFIG_FILE="$INSTA_TOPLVL/insta/confs/default.sh"
-fi
-
-# Adjust CONFIG_FILE for chroot environment
-CONFIG_FILE="insta/confs/$(basename "$CONFIG_FILE")"
-export CONFIG_FILE
-
-# Source configuration
-source "$CONFIG_FILE"
-
-# Source common configuration
+# Source common.sh early for functions
 source "$SCRIPT_DIR/../utils/common.sh"
-
-log_info "Sourced config from $CONFIG_FILE"
-log_info "EXTRA_PACKAGES: ${EXTRA_PACKAGES[*]}"
-log_info "AUR_PACKAGES: ${AUR_PACKAGES[*]}"
 
 # Arch Linux Chroot Script
 # Runs all chroot steps in order
@@ -45,9 +29,9 @@ if [[ "${1:-}" == "--help" ]]; then
     echo "  8. 008-services   - Enable services"
     echo "  9. 009-bootctl    - Install and configure systemd-boot"
     echo " 10. 010-mkinitcpio - Configure mkinitcpio"
-    echo " 11. 011-snapper   - Configure snapper"
     echo " 12. 012-rollback  - Install snapper-rollback"
-    echo " 13. 013-cleanup   - Final cleanup tasks"
+    echo " 13. 013-skeleton  - Copy configuration skeleton files"
+    echo " 14. 014-cleanup   - Final cleanup tasks"
     echo ""
     echo "Usage:"
     echo "  $0                    - Run all steps"
@@ -64,12 +48,42 @@ if [[ "${1:-}" == "--help" ]]; then
     echo "  KERNEL       - Kernel installed (default: linux-lts)"
     echo "  DESKTOP      - Desktop environment (default: plasma)"
     echo "  GPU_DRIVER   - GPU driver: auto, nvidia, amd, intel, modesetting (default: auto)"
-    echo "  AUTO_CONFIRM - Skip confirmations (default: false)"
+    echo "  AUTO_CHROOT_CONFIRM - Skip chroot confirmation (default: true)"
     echo ""
     echo "Usage: $0"
     echo "Run this inside arch-chroot ${TARGET_DIR}"
     exit 0
 fi
+
+# Require config file to be set
+if [[ -z "${CONFIG_FILE:-}" ]]; then
+    echo "Error: CONFIG_FILE environment variable must be set."
+    echo "Run from main script: ./insta/run.sh --config <name>"
+    echo "Or set manually: CONFIG_FILE=/path/to/config.sh $0"
+    exit 1
+fi
+
+# Adjust CONFIG_FILE for chroot environment
+CONFIG_FILE="insta/confs/$(basename "$CONFIG_FILE")"
+export CONFIG_FILE
+
+# Source default config first (if it exists)
+DEFAULT_CONFIG="insta/confs/default.sh"
+if [[ -f "$DEFAULT_CONFIG" ]]; then
+    source "$DEFAULT_CONFIG"
+    combine_config_arrays
+fi
+
+# Source configuration
+source "$CONFIG_FILE"
+combine_config_arrays
+
+# Source common configuration again for package combining logic
+source "$SCRIPT_DIR/../utils/common.sh"
+
+log_info "Sourced config from $CONFIG_FILE"
+log_info "EXTRA_PACKAGES: ${EXTRA_PACKAGES[*]}"
+log_info "AUR_PACKAGES: ${AUR_PACKAGES[*]}"
 
 # Define the steps array
 STEPS=(
@@ -85,14 +99,15 @@ STEPS=(
     "010-mkinitcpio.sh"
     "011-snapper.sh"
     "012-rollback.sh"
-    "013-cleanup.sh"
+    "013-skeleton.sh"
+    "014-cleanup.sh"
 )
 
 # Handle --redo-step and --redo-from arguments
 if [[ "${1:-}" == "--redo-step" ]]; then
     STEP="${2:-}"
     if [[ -z "$STEP" ]]; then
-        log_error "Error: --redo-step requires a step number (1-13)"
+        log_error "Error: --redo-step requires a step number (1-14)"
         exit 1
     fi
     
@@ -106,17 +121,17 @@ if [[ "${1:-}" == "--redo-step" ]]; then
         7|07) ./insta/steps/chroot/007-packages.sh ;;
         8|08) ./insta/steps/chroot/008-services.sh ;;
         9|09) ./insta/steps/chroot/009-bootctl.sh ;;
-        10) ./insta/steps/chroot/010-mkinitcpio.sh ;;
         11) ./insta/steps/chroot/011-snapper.sh ;;
         12) ./insta/steps/chroot/012-rollback.sh ;;
-        13) ./insta/steps/chroot/013-cleanup.sh ;;
-        *) log_error "Error: Invalid step number $STEP. Must be 1-13 or 01-13." ;;
+        13) ./insta/steps/chroot/013-skeleton.sh ;;
+        14) ./insta/steps/chroot/014-cleanup.sh ;;
+        *) log_error "Error: Invalid step number $STEP. Must be 1-14 or 01-14." ;;
     esac
     exit $?
 elif [[ "${1:-}" == "--redo-from" ]]; then
     START_STEP="${2:-}"
     if [[ -z "$START_STEP" ]]; then
-        log_error "Error: --redo-from requires a step number (1-13)"
+        log_error "Error: --redo-from requires a step number (1-14)"
         exit 1
     fi
     
@@ -162,11 +177,7 @@ elif [[ "${1:-}" == "--redo-from" ]]; then
     exit $?
 fi
 
-check_root
-ensure_gum
 validate_timezone "$TIMEZONE"
-
-show_config
 
 if ! confirm "Proceed with chroot configuration?"; then
     log_info "Chroot configuration cancelled"
@@ -187,7 +198,8 @@ log_info "Starting chroot configuration..."
 ./insta/steps/chroot/010-mkinitcpio.sh
 ./insta/steps/chroot/011-snapper.sh
 ./insta/steps/chroot/012-rollback.sh
-./insta/steps/chroot/013-cleanup.sh
+./insta/steps/chroot/013-skeleton.sh
+./insta/steps/chroot/014-cleanup.sh
 
 # Install GPU drivers
 if [[ "$GPU_DRIVER" == "auto" ]]; then

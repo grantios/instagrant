@@ -7,15 +7,15 @@ This guide provides detailed instructions for using the GrantiOS install scripts
 ### Option 1: Fully Automated
 ```bash
 git clone https://github.com/grantios/instagram.git && cd instagram
-DISK=/dev/sda ./insta/run.sh
+DISK=/dev/sda ./insta/run.sh --config workstation
 ```
 
 ### Option 2: Manual Steps
 ```bash
 git clone https://github.com/grantios/instagram.git && cd instagram
-./insta/cmds/setup.sh
+./insta/cmds/setup.sh --config workstation
 arch-chroot /mnt
-./insta/cmds/chroot.sh
+./insta/cmds/chroot.sh --config workstation
 ```
 
 ### Option 3: Individual Steps
@@ -48,15 +48,23 @@ Set environment variables to customize:
 - `KERNEL` - Kernel to install (default: `linux-lts`)
 - `DESKTOP` - Desktop environment: `none`, `plasma`, `hyprland` (default: `plasma`)
 - `GPU_DRIVER` - GPU driver: `auto`, `nvidia`, `amd`, `intel`, `modesetting` (default: `auto`)
-- `AUTO_CONFIRM` - Skip confirmations (default: `false`)
+- `AUTO_CHROOT_CONFIRM` - Skip chroot confirmation (default: `true`)
 
-Example: `DISK=/dev/nvme0n1 TIMEZONE=Europe/London KERNEL=linux-zen DESKTOP=gnome ./insta/all.sh --config insta/confs/homeserver.sh`
+Example: `DISK=/dev/nvme0n1 TIMEZONE=Europe/London KERNEL=linux-zen DESKTOP=gnome ./insta/run.sh --config homeserver`
 
-The `insta/confs/default.sh` file is automatically loaded if it exists, providing default configuration values. Other config examples are available in `insta/confs/`.
+The `insta/confs/default.sh` file is loaded first (if it exists), providing base configuration that applies to all installations. Then the specified configuration file is loaded and **combined** with the defaults (packages, AUR packages, and services are merged rather than overwritten). Available configurations are:
+
+- `workstation` - Full workstation with Plasma desktop and development packages
+- `homeserver` - Server configuration with minimal desktop
+- `mediacenter` - Kodi/Jellyfin media center with Hyprland
+- `smartclock` - Rotated display configuration for smart clock
+- `template` - Template for creating new configurations
+
+Use `./insta/run.sh --config-list` to see all available configurations.
 
 ## External Drives
 
-You can configure additional drives to be automatically formatted and mounted during installation. Edit `insta/confs/default.sh` and uncomment the `EXTERNAL_DRIVES` array:
+You can configure additional drives to be automatically formatted and mounted during installation. Edit `insta/confs/default.sh` or your specific config file and uncomment the `EXTERNAL_DRIVES` array:
 
 ```bash
 export EXTERNAL_DRIVES=(
@@ -71,13 +79,28 @@ Supported filesystems: `xfs`, `btrfs`, `ext4`
 
 ## Scripts
 
-- `insta/all.sh` - Complete automated installation
+- `insta/run.sh` - Complete automated installation (requires --config)
 - `insta/cmds/setup.sh` - Pre-chroot setup (partitioning, mounting, pacstrapping)
 - `insta/cmds/chroot.sh` - In-chroot configuration
-- `insta/post.sh` - Optional post-installation setup (run after first boot)
 - `insta/steps/setup/` - Individual setup steps
 - `insta/steps/chroot/` - Individual chroot steps
 - `insta/utils/common.sh` - Shared configuration and utilities
+
+## Skeleton System
+
+The installation system uses a skeleton-based configuration approach:
+
+- **`insta/skel/default/`** - Base skeleton files copied to ALL installations
+- **`insta/skel/{config}/`** - Configuration-specific skeleton files (workstation, mediacenter, etc.)
+
+Files are copied in order: default skeleton first, then config-specific skeleton (allowing overrides).
+
+### Skeleton Structure:
+- **@sys/** - Files copied to system root (/)
+- **@root/** - Files copied to root user's home (/root/)
+- **@user/** - Files copied to configured user's home
+
+Post-installation script is available at `/tios/post.sh` on installed systems.
 
 ## Features
 

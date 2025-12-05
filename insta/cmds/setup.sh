@@ -9,15 +9,7 @@ if [[ -z "${INSTA_TOPLVL:-}" ]]; then
     INSTA_TOPLVL="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 fi
 
-# Set config file if not set
-if [[ -z "${CONFIG_FILE:-}" ]]; then
-    CONFIG_FILE="$INSTA_TOPLVL/insta/confs/default.sh"
-fi
-
-# Source configuration
-source "$CONFIG_FILE"
-
-# Source common configuration
+# Source common.sh early for functions
 source "$INSTA_TOPLVL/insta/utils/common.sh"
 
 # Arch Linux Setup Script
@@ -48,12 +40,34 @@ if [[ "${1:-}" == "--help" ]]; then
     echo "  PASSROOT     - Default root password (default: GATEKEEP)"
     echo "  KERNEL       - Kernel to install (default: linux-lts)"
     echo "  DESKTOP      - Desktop environment (default: kde)"
-    echo "  AUTO_CONFIRM - Skip confirmations (default: false)"
+    echo "  AUTO_CHROOT_CONFIRM - Skip chroot confirmation (default: true)"
     echo ""
     echo "Usage: $0"
     echo "Example: DISK=/dev/sdb TARGET_DIR=/custom/mount KERNEL=linux-zen DESKTOP=gnome $0"
     exit 0
 fi
+
+# Require config file to be set
+if [[ -z "${CONFIG_FILE:-}" ]]; then
+    echo "Error: CONFIG_FILE environment variable must be set."
+    echo "Run from main script: ./insta/run.sh --config <name>"
+    echo "Or set manually: CONFIG_FILE=/path/to/config.sh $0"
+    exit 1
+fi
+
+# Source default config first (if it exists)
+DEFAULT_CONFIG="$INSTA_TOPLVL/insta/confs/default.sh"
+if [[ -f "$DEFAULT_CONFIG" ]]; then
+    source "$DEFAULT_CONFIG"
+    combine_config_arrays
+fi
+
+# Source configuration
+source "$CONFIG_FILE"
+combine_config_arrays
+
+# Source common configuration again for package combining logic
+source "$INSTA_TOPLVL/insta/utils/common.sh"
 
 # Handle --redo-step and --redo-from arguments
 if [[ "${1:-}" == "--redo-step" ]]; then
@@ -122,16 +136,13 @@ elif [[ "${1:-}" == "--redo-from" ]]; then
     exit $?
 fi
 
-check_root
-ensure_gum
-validate_disk "$DISK"
-ensure_target_dir
 validate_timezone "$TIMEZONE"
-check_disk_unmounted "$DISK"
 
-show_config
+# Get disk size for confirmation message
+DISK_SIZE=$(get_disk_size "$DISK")
 
-if ! confirm "Proceed with setup?"; then
+echo ""
+if ! gum confirm "ARE YOU REALLY SURE, THIS WILL COMPLETELY FORMAT $DISK (${DISK_SIZE}) !!!" --prompt.foreground="196"; then
     log_info "Setup cancelled"
     exit 0
 fi

@@ -34,20 +34,32 @@ console-mode max
 editor no
 EOF
 
+# Build boot options string
+BOOT_OPTS="root=UUID=${ROOT_UUID} rootflags=subvol=@ rw quiet splash"
+if [ -n "${BOOT_OPTIONS:-}" ]; then
+    BOOT_OPTS="${BOOT_OPTS} ${BOOT_OPTIONS}"
+fi
+
 # Create Arch Linux boot entry
 cat > /boot/loader/entries/arch.conf << EOF
-title   Arch Linux LTS
+title   GrantiOS 2025.Q4
 linux   /vmlinuz-linux-lts
 initrd  /initramfs-linux-lts.img
-options root=UUID=${ROOT_UUID} rootflags=subvol=@ rw quiet splash
+options ${BOOT_OPTS}
 EOF
+
+# Build fallback boot options (without quiet splash)
+FALLBACK_OPTS="root=UUID=${ROOT_UUID} rootflags=subvol=@ rw"
+if [ -n "${BOOT_OPTIONS:-}" ]; then
+    FALLBACK_OPTS="${FALLBACK_OPTS} ${BOOT_OPTIONS}"
+fi
 
 # Create fallback boot entry
 cat > /boot/loader/entries/arch-fallback.conf << EOF
-title   Arch Linux LTS (fallback)
+title   GrantiOS 2025.Q4 (fallback)
 linux   /vmlinuz-linux-lts
 initrd  /initramfs-linux-lts-fallback.img
-options root=UUID=${ROOT_UUID} rootflags=subvol=@ rw
+options ${FALLBACK_OPTS}
 EOF
 
 # Update bootctl

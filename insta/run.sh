@@ -5,19 +5,86 @@ set -euo pipefail
 INSTA_TOPLVL="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export INSTA_TOPLVL
 
+# Source configuration generator
+source "$INSTA_TOPLVL/insta/utils/configuration-generator.sh"
+
+# Source common.sh early for functions
+source "$INSTA_TOPLVL/insta/utils/common.sh"
+
 # Parse command line options
-CONFIG_FILE="$INSTA_TOPLVL/insta/confs/default.sh"
-if [[ "${1:-}" == "--config" ]]; then
-    CONFIG_FILE="$INSTA_TOPLVL/insta/confs/${2:-default.sh}"
-    shift 2
+if [[ "${1:-}" == "--config-gen" ]]; then
+    shift
+    handle_config_gen "$@"
 fi
+
+# Handle --config-list option
+if [[ "${1:-}" == "--config-list" ]]; then
+    echo "Available configuration files in $INSTA_TOPLVL/insta/confs/:"
+    echo ""
+    for config in "$INSTA_TOPLVL/insta/confs/"*.sh; do
+        if [[ -f "$config" ]]; then
+            config_name=$(basename "$config" .sh)
+            echo "  $config_name"
+        fi
+    done
+    echo ""
+    echo "Use --config <name> to select a configuration."
+    exit 0
+fi
+
+# Require --config option
+if [[ "${1:-}" != "--config" ]]; then
+    echo "Error: --config option is required."
+    echo ""
+    echo "Available configuration files in $INSTA_TOPLVL/insta/confs/:"
+    echo ""
+    for config in "$INSTA_TOPLVL/insta/confs/"*.sh; do
+        if [[ -f "$config" ]]; then
+            config_name=$(basename "$config" .sh)
+            echo "  $config_name"
+        fi
+    done
+    echo ""
+    echo "Usage: $0 --config <name> [--config-gen [NAME]]"
+    echo "Example: $0 --config workstation"
+    echo "Example: $0 --config-list"
+    exit 1
+fi
+
+# Parse --config option
+config_arg="${2:-}"
+if [[ -z "$config_arg" ]]; then
+    echo "Error: --config requires a configuration name."
+    exit 1
+fi
+
+# Try the config name as-is first
+if [[ -f "$INSTA_TOPLVL/insta/confs/${config_arg}" ]]; then
+    CONFIG_FILE="$INSTA_TOPLVL/insta/confs/${config_arg}"
+# If not found, try adding .sh extension
+elif [[ -f "$INSTA_TOPLVL/insta/confs/${config_arg}.sh" ]]; then
+    CONFIG_FILE="$INSTA_TOPLVL/insta/confs/${config_arg}.sh"
+else
+    echo "Error: Config file '$config_arg' or '${config_arg}.sh' not found in $INSTA_TOPLVL/insta/confs/"
+    exit 1
+fi
+
+shift 2
 
 export CONFIG_FILE
 
+# Source default config first (if it exists)
+DEFAULT_CONFIG="$INSTA_TOPLVL/insta/confs/default.sh"
+if [[ -f "$DEFAULT_CONFIG" ]]; then
+    source "$DEFAULT_CONFIG"
+    combine_config_arrays
+fi
+
 # Source configuration file
 source "$CONFIG_FILE"
+combine_config_arrays
 
-# Source common configuration
+# Source common configuration again for package combining logic
 source "$INSTA_TOPLVL/insta/utils/common.sh"
 
 # Start logging everything to debug.log
@@ -48,7 +115,12 @@ if [[ "${1:-}" == "--help" ]]; then
     echo "  4. Exit chroot and provide final instructions"
     echo ""
     echo "Options:"
-    echo "  --config FILE    Use alternative config file (default: insta/confs/default.sh)"
+    echo "  --config-gen [NAME]    Generate a config template with skeleton structure (default name: template)"
+    echo "  --config FILE          Use specified config file (REQUIRED - no default)"
+    echo "                         default.sh is loaded first, then the specified config"
+    echo "                         Packages, AUR packages, and services are combined (not overwritten)"
+    echo "                         FILE can be with or without .sh extension"
+    echo "  --config-list          List all available configuration files"
     echo ""
     echo "Configuration (set as environment variables or in config file):"
     echo "  DISK         - Target disk (default: /dev/sda)"
@@ -60,11 +132,13 @@ if [[ "${1:-}" == "--help" ]]; then
     echo "  PASSROOT     - Default root password (default: GATEKEEP)"
     echo "  KERNEL       - Kernel to install (default: linux-lts)"
     echo "  DESKTOP      - Desktop environment (default: plasma)"
-    echo "  AUTO_CONFIRM - Skip confirmations (default: false)"
+    echo "  AUTO_CHROOT_CONFIRM - Skip chroot confirmation (default: true)"
     echo ""
-    echo "Usage: $0 [--config FILE]"
-    echo "Example: $0 --config homeserver.sh"
-    echo "Example: DISK=/dev/sdb KERNEL=linux-zen $0"
+    echo "Usage: $0 --config <name> [--config-gen [NAME]]"
+    echo "Example: $0 --config workstation"
+    echo "Example: $0 --config homeserver --config-gen"
+    echo "Example: $0 --config-list"
+    echo "Example: DISK=/dev/sdb KERNEL=linux-zen $0 --config mediacenter"
     echo ""
     echo "WARNING: This will completely wipe and repartition the target disk!"
     exit 0
@@ -73,7 +147,6 @@ fi
 check_root
 ensure_gum
 validate_disk "$DISK"
-validate_timezone "$TIMEZONE"
 check_disk_unmounted "$DISK"
 
 show_config
@@ -124,7 +197,7 @@ echo "  - Check snapshots: sudo snapper list"
 if [[ "$DESKTOP" != "none" ]]; then
     echo "  - Desktop environment: $DESKTOP"
 fi
-echo "  - Run post-install script: ./insta/post.sh (optional)"
+echo "  - Run post-install script: /tios/post.sh (optional)"
 echo ""
 echo "System Information:"
 echo "  - Hostname: $HOSTNAME"

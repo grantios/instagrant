@@ -3,12 +3,15 @@
 # Set default kernel if not set
 KERNEL=${KERNEL:-linux-lts}
 
+# Set auto-chroot-confirm to true by default (skip chroot confirmation prompt)
+AUTO_CHROOT_CONFIRM=${AUTO_CHROOT_CONFIRM:-"true"}
+
 # Base Packages For Install.
-BASE_PACKAGES="base base-devel sudo just zsh tmux btop acpi fastfetch glow gum ${KERNEL} linux-firmware efibootmgr btrfs-progs xfsprogs networkmanager curl wget reflector restic rclone rsync syncthing openssh tailscale git-lfs git"
+BASE_PACKAGES="${KERNEL} linux-firmware base base-devel sudo efibootmgr btrfs-progs xfsprogs networkmanager reflector curl rsync git zsh"
 
 # Default package lists
-DEFAULT_EXTRA_PACKAGES=("github-cli")
-DEFAULT_AUR_PACKAGES=("chez-scheme" "chibi-scheme")
+DEFAULT_EXTRA_PACKAGES=(" ")
+DEFAULT_AUR_PACKAGES=(" ")
 DEFAULT_SERVICES="NetworkManager fstrim.timer reflector.timer"
 
 # Combine defaults with config additions
@@ -75,7 +78,7 @@ ensure_gum() {
 # Confirm action
 confirm() {
     local message="$1"
-    if [[ "${AUTO_CONFIRM}" == "true" ]]; then
+    if [[ "$message" == *"chroot"* && "${AUTO_CHROOT_CONFIRM}" == "true" ]]; then
         log_info "Auto-confirming: $message"
         return 0
     fi
@@ -89,7 +92,7 @@ validate_disk() {
         log_error "Disk $disk does not exist or is not a block device"
         exit 1
     fi
-    log_info "Validated disk: $disk"
+    # Silent validation - disk exists
 }
 
 # Ensure target directory exists
@@ -104,22 +107,18 @@ ensure_target_dir() {
 # Check if target disk is unmounted and has no active swap
 check_disk_unmounted() {
     local disk="$1"
-    log_info "Checking if $disk is fully unmounted..."
+    # Silent disk unmounting preparation
     
     # Stop multipath daemon if running (can cause device busy issues)
-    log_info "Stopping multipath daemon if present..."
     systemctl stop multipathd 2>/dev/null || true
     
     # Remove all device mapper devices
-    log_info "Removing device mapper devices..."
     dmsetup remove_all 2>/dev/null || true
     
     # Deactivate all swap first
-    log_info "Deactivating all swap..."
     swapoff -a 2>/dev/null || true
     
     # Kill any processes using partitions on this disk
-    log_info "Killing processes using partitions on $disk..."
     for part in $(lsblk -ln -o NAME "$disk" | grep -E "^${disk##*/}[0-9]+" | sed "s|^|/dev/|"); do
         fuser -k "$part" 2>/dev/null || true
         # Also kill any remaining processes with lsof
@@ -137,17 +136,15 @@ check_disk_unmounted() {
         echo "$mounted_parts" | while read -r part; do
             echo "  - $part"
         done
-        log_info "Force unmounting partitions..."
+        # Force unmounting partitions silently
         
         # Try to unmount /mnt first if it's mounted
         if mountpoint -q ${TARGET_DIR}; then
-            log_info "Force unmounting ${TARGET_DIR}..."
             umount -f ${TARGET_DIR} 2>/dev/null || umount -l ${TARGET_DIR} 2>/dev/null || log_error "Failed to unmount ${TARGET_DIR}"
         fi
         
         # Force unmount any remaining partitions from this disk
         echo "$mounted_parts" | while read -r part; do
-            log_info "Force unmounting $part..."
             umount -f "$part" 2>/dev/null || umount -l "$part" 2>/dev/null || log_warn "Failed to unmount $part"
         done
     fi
@@ -165,6 +162,30 @@ check_disk_unmounted() {
     fi
     
     log_success "Disk $disk is fully unmounted and ready"
+}
+
+# Get disk size in human readable format
+get_disk_size() {
+    local disk="$1"
+    local size_bytes
+    size_bytes=$(lsblk -b -n -o SIZE "$disk" | head -1)
+    if [[ -n "$size_bytes" ]]; then
+        # Convert bytes to human readable
+        if command -v numfmt >/dev/null 2>&1; then
+            numfmt --to=iec-i --suffix=B "$size_bytes"
+        else
+            # Fallback for systems without numfmt
+            if (( size_bytes >= 1073741824 )); then
+                echo "$(( size_bytes / 1073741824 ))GB"
+            elif (( size_bytes >= 1048576 )); then
+                echo "$(( size_bytes / 1048576 ))MB"
+            else
+                echo "${size_bytes}B"
+            fi
+        fi
+    else
+        echo "Unknown"
+    fi
 }
 
 # Validate timezone
@@ -291,7 +312,7 @@ show_config() {
     echo "Kernel: $KERNEL"
     echo "Desktop: $DESKTOP"
     echo "GPU Driver: $GPU_DRIVER"
-    echo "Auto-confirm: $AUTO_CONFIRM"
+    echo "Auto-confirm: $AUTO_CHROOT_CONFIRM"
     
     if [[ -n "${EXTERNAL_DRIVES+x}" && ${#EXTERNAL_DRIVES[@]} -gt 0 ]]; then
         echo "External Drives:"
@@ -310,6 +331,32 @@ show_config() {
     fi
     
     echo "=========================================="
+}
+
+
+# Function to combine arrays from multiple configs
+combine_config_arrays() {
+    local temp_var
+    
+    # Combine EXTRA_PACKAGES if defined
+    if [[ -n "${EXTRA_PACKAGES+x}" && -n "${_EXTRA_PACKAGES_PREV+x}" ]]; then
+        temp_var=("${_EXTRA_PACKAGES_PREV[@]}" "${EXTRA_PACKAGES[@]}")
+        EXTRA_PACKAGES=("${temp_var[@]}")
+    fi
+    _EXTRA_PACKAGES_PREV=("${EXTRA_PACKAGES[@]}")
+    
+    # Combine AUR_PACKAGES if defined  
+    if [[ -n "${AUR_PACKAGES+x}" && -n "${_AUR_PACKAGES_PREV+x}" ]]; then
+        temp_var=("${_AUR_PACKAGES_PREV[@]}" "${AUR_PACKAGES[@]}")
+        AUR_PACKAGES=("${temp_var[@]}")
+    fi
+    _AUR_PACKAGES_PREV=("${AUR_PACKAGES[@]}")
+    
+    # Combine SERVICES (string concatenation with space)
+    if [[ -n "${SERVICES+x}" && -n "${_SERVICES_PREV+x}" && "$SERVICES" != "$_SERVICES_PREV" ]]; then
+        SERVICES="$_SERVICES_PREV $SERVICES"
+    fi
+    _SERVICES_PREV="$SERVICES"
 }
 
 # Install desktop environment

@@ -20,10 +20,9 @@ export DESKTOP="none"  # TTY only, no desktop environment
 export GPU_DRIVER="auto"
 
 # Server packages (appended to defaults)
-export EXTRA_PACKAGES=(
+EXTRA_PACKAGES+=(
     "samba"
     "docker"
 )
 
 # Installation options
-export AUTO_CONFIRM="false"
