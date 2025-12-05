@@ -1,6 +1,9 @@
+> [!IMPORTANT]  
+> This is uber experimental software (that writes to and formats your disk), that is really only intended for use by [@Grantsform](https://github.com/grantsform/). By using this, you are agreeing that there is no warranty for using this software nor does he holds any responsiblity for your data or anything else. Have backups on a seperate, not attached drive if / when you are going to try to use this on a machine with any important data.
+
 # INSTAGRANT
 
-INSTAGRANT is a collection of modular install x setup scripts to be run on an ArchLinux LiveUSB for an opinionated install of arguable 'best practices'. It features root on a Btrfs filesystem + Snapper based rollbacks, Linux-lts kernel, and using systemd-boot. It provides a semi-declarative configuation system to setup your user, and packages. It's a fully automated script but with manual intervention to redo from a given step if needed, making it easy (enough) to deploy. [GrantsForm](https://github.com/grantsform) is trying to daily-drive this. And he doesn't really suggest anyone use this for anything at this point, this is more proof-of-concept... though it "mostly works" lol.
+`INSTAGRANT` is a collection of modular install x setup scripts to be run on an ArchLinux LiveUSB for an opinionated install of arguable 'best practices'. It features root on a Btrfs filesystem + Snapper based rollbacks, Linux-lts kernel, and using systemd-boot. It provides a semi-declarative configuation system to setup your user, and packages. It's a fully automated script but with manual intervention to redo from a given step if needed, making it easy (enough) to deploy. [GrantsForm](https://github.com/grantsform) is trying to daily-drive this. And he doesn't really suggest anyone use this for anything at this point, this is more proof-of-concept... though it "mostly works" lol.
 
 > The name is a bad pun on 'instagram' ya know, because it's a place to save your snapshots. lol
 
@@ -21,7 +24,10 @@ For detailed installation instructions, see [GUIDE.md](GUIDE.md).
 
 ```bash
 git clone https://github.com/grantios/instagram.git && cd instagram
-DISK=/dev/sda ./insta/run.sh
+DISK=/dev/sda ./insta/run.sh --config workstation
+
+# To See all avaliable built-in configs.
+./insta/run.sh --config-list
 ```
 
 ## Requirements
