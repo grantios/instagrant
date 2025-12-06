@@ -7,6 +7,8 @@ source "$(dirname "$0")/../../utils/common.sh"
 # Arch Linux Setup Fstab Script
 # Generating fstab
 
+gum style --border normal --padding "0 1" --border-foreground 34 "Step 4/5: Generating Fstab"
+
 log_info "Generating fstab"
 
 # Generate fstab

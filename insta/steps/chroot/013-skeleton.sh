@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Source common configuration
+source "$(dirname "$0")/../../utils/common.sh"
+
 # Arch Linux Chroot Copy Skel Script
 # Copying skeleton files for configuration-specific setup
 
-gum style --border normal --padding "0 1" --border-foreground 86 "Step 13: Copying skeleton files..."
+gum style --border normal --padding "0 1" --border-foreground 34 "Step 13/14: Copying Skeleton Files"
+
+gum style --border normal --padding "0 1" --border-foreground '#800080' "Stage 1/1: Copying skeleton files..."
 
 # Set paths
 TIOS_DIR="/tios"

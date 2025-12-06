@@ -7,9 +7,9 @@ source "$(dirname "$0")/../../utils/common.sh"
 # Arch Linux Chroot Timezone Script
 # Setting timezone, locale, and keymap
 
-ensure_gum
+gum style --border normal --padding "0 1" --border-foreground 34 "Step 1/14: Setting Timezone, Locale, and Keymap"
 
-gum style --border normal --padding "0 1" --border-foreground 86 "Step 1: Setting timezone, locale, and keymap..."
+gum style --border normal --padding "0 1" --border-foreground '#800080' "Stage 1/1: Setting timezone, locale, and keymap..."
 
 # Set timezone
 log_info "Setting timezone to ${TIMEZONE}"

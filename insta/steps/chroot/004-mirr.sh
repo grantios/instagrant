@@ -7,7 +7,9 @@ source "$(dirname "$0")/../../utils/common.sh"
 # Arch Linux Chroot Mirror Script
 # Configuring mirrors for pacman using reflector
 
-gum style --border normal --padding "0 1" --border-foreground 86 "Step 4: Configuring pacman mirrors..."
+gum style --border normal --padding "0 1" --border-foreground 34 "Step 4/14: Configuring Pacman Mirrors"
+
+gum style --border normal --padding "0 1" --border-foreground '#800080' "Stage 1/1: Configuring pacman mirrors..."
 
 # Enable multilib repository for 32-bit packages
 log_info "Enabling multilib repository..."

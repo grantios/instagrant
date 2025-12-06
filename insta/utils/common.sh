@@ -244,7 +244,12 @@ detect_gpu_driver() {
     # Check for NVIDIA
     if lspci | grep -i nvidia > /dev/null; then
         log_info "NVIDIA GPU detected"
-        echo "nvidia"
+        if [[ "$KERNEL" == "linux-lts" ]]; then
+            log_info "Kernel is linux-lts, using nvidia-lts drivers"
+            echo "nvidia-lts"
+        else
+            echo "nvidia"
+        fi
         return
     fi
 
@@ -273,11 +278,11 @@ install_gpu_driver() {
     case "$driver" in
         nvidia)
             log_info "Installing NVIDIA drivers..."
-            if [[ "$KERNEL" == "linux-lts" ]]; then
-                retry_pacman pacman -S --noconfirm nvidia-lts nvidia-utils nvidia-settings nvtop cuda
-            else
-                retry_pacman pacman -S --noconfirm nvidia nvidia-utils nvidia-settings nvtop cuda
-            fi
+            retry_pacman pacman -S --noconfirm nvidia nvidia-utils nvidia-settings nvtop cuda
+            ;;
+        nvidia-lts)
+            log_info "Installing NVIDIA LTS drivers..."
+            retry_pacman pacman -S --noconfirm nvidia-lts nvidia-utils nvidia-settings nvtop cuda
             ;;
         amd)
             log_info "Installing AMD drivers..."
@@ -301,7 +306,7 @@ show_config() {
     echo "=========================================="
     echo "Configuration Summary"
     echo "=========================================="
-    echo "Disk: $DISK"
+    echo "Disk: $TARGET_DISK"
     echo "Target Directory: $TARGET_DIR"
     echo "Timezone: $TIMEZONE"
     echo "Locale: $LOCALE"
@@ -315,18 +320,18 @@ show_config() {
     echo "Auto-confirm: $AUTO_CHROOT_CONFIRM"
     
     if [[ -n "${EXTERNAL_DRIVES+x}" && ${#EXTERNAL_DRIVES[@]} -gt 0 ]]; then
-        echo "External Drives:"
+        echo "External Drives (will be partitioned and formatted as XFS):"
         for drive_config in "${EXTERNAL_DRIVES[@]}"; do
-            IFS=':' read -r device label mountpoint filesystem <<< "$drive_config"
-            echo "  - $device -> $mountpoint ($filesystem, label: $label)"
+            IFS=':' read -r device mountpoint label <<< "$drive_config"
+            echo "  - $device -> $mountpoint (label: $label)"
         done
     fi
     
     if [[ -n "${PRESERVE_DRIVES+x}" && ${#PRESERVE_DRIVES[@]} -gt 0 ]]; then
         echo "Preserve Drives (preserved):"
         for drive_config in "${PRESERVE_DRIVES[@]}"; do
-            IFS=':' read -r device label mountpoint filesystem <<< "$drive_config"
-            echo "  - $device -> $mountpoint ($filesystem, label: $label)"
+            IFS=':' read -r device mountpoint <<< "$drive_config"
+            echo "  - $device -> $mountpoint"
         done
     fi
     

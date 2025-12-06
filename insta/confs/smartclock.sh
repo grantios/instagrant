@@ -5,18 +5,18 @@
 export CONFIG_NAME="smartclock"
 
 # Disk configuration
-export DISK="/dev/sda"
+export TARGET_DISK="/dev/sda"
 export TARGET_DIR="/target"
 
 # System configuration
 export TIMEZONE="America/Chicago"
 export LOCALE="en_US.UTF-8"
 export KEYMAP="colemak"
-export HOSTNAME="LOADED"
-export USERNAME="CLOCKD"
-export HOMEDIR="/room/clockd"
-export PASSWORD="timesUP!"
-export PASSROOT="timesUP!"
+export HOSTNAME="LEGRUNE"
+export USERNAME="CLOCKED"
+export HOMEDIR="/room/eight"
+export PASSWORD="change!"
+export PASSROOT="change!"
 
 # Software configuration
 export KERNEL="linux-lts"

@@ -13,9 +13,9 @@ source "$(dirname "$0")/../../utils/common.sh"
 # Arch Linux Chroot AUR Script
 # Installing AUR packages
 
-ensure_gum
+gum style --border normal --padding "0 1" --border-foreground 34 "Step 6/14: Installing AUR Packages"
 
-gum style --border normal --padding "0 1" --border-foreground 86 "Step 5: Installing AUR packages..."
+gum style --border normal --padding "0 1" --border-foreground '#800080' "Stage 1/1: Installing AUR packages..."
 
 # Install AUR packages
 if [[ ${#AUR_PACKAGES[@]} -gt 0 ]]; then

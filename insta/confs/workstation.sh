@@ -6,26 +6,28 @@
 export CONFIG_NAME="workstation"
 
 # Disk configuration
-export DISK="/dev/sda"
+export TARGET_DISK="/dev/sda"
 export TARGET_DIR="/target"
 
 # External drives configuration (uncomment and modify as needed)
-# Each drive will be formatted and mounted during installation
-# Format: DEVICE:LABEL:MOUNTPOINT:FILESYSTEM
-# export EXTERNAL_DRIVES=(
-#     "/dev/sdb1:data:/drv/data:xfs"
-#     "/dev/sdc1:dada:/mnt/backup:xfs"
-# )
+# These drives will be partitioned (single partition), formatted as XFS, and mounted during installation
+# Format: DEVICE:MOUNTPOINT:LABEL
+# DEVICE should be the whole drive (e.g., /dev/sdb)
+export EXTERNAL_DRIVES=(
+    "/dev/sdb:/drv/data:data"
+    "/dev/sdc:/drv/dada:dada"
+)
 
 # Preserve drives configuration (uncomment and modify as needed)
 # These drives will be mounted but NOT reformatted during installation
 # Useful for preserving existing data partitions
-# Format: DEVICE:LABEL:MOUNTPOINT:FILESYSTEM
-# export PRESERVE_DRIVES=(
-#     "/dev/sda4:room:/room:xfs"
-#     "/dev/sdb1:data:/drv/data:btrfs"
-#     "/dev/sdc4:dada:/mnt/backup:ext4"
-# )
+# Format: DEVICE:MOUNTPOINT
+# DEVICE can be /dev/sdx, LABEL=label, or UUID=uuid
+#export PRESERVE_DRIVES=(
+#    "LABEL=room:/room"
+#    "LABEL=data:/drv/data"
+#    "LABEL=dada:/drv/dada"
+#)
 
 # System configuration
 export TIMEZONE="America/Chicago"
@@ -40,7 +42,7 @@ export PASSROOT="change!"
 # Software configuration
 export KERNEL="linux-lts"
 export DESKTOP="plasma"  # plasma, hyprland, none
-export GPU_DRIVER="auto"  # auto, nvidia, amd, intel, modesetting
+export GPU_DRIVER="auto"  # auto, nvidia, nvidia-lts, amd, intel, modesetting
 
 # Additional packages and services (appended to defaults)
 # Edit common.sh as-needed if you need to edit base packages
@@ -57,7 +59,7 @@ EXTRA_PACKAGES+=(
     "easyeffects" "pipewire" "pipewire-alsa" "pipewire-pulse"
     "chromium" "firefox" "thunderbird" "signal-desktop" "element-desktop" 
     "raylib" "sdl2" "sdl2_net" "sdl2_image" "sdl2_mixer" "sdl2_ttf"
-    "qemu-full""llvm" "lldb" "clang" "cmake" "meson" "ninja" "sbcl" "roswell" "racket" "fennel"
+    "qemu-full" "llvm" "lldb" "clang" "cmake" "meson" "ninja" "sbcl" "roswell" "racket" "fennel"
 )
 AUR_PACKAGES+=(
     "papirus-folders-git" "bazaar"

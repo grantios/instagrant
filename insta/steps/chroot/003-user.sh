@@ -7,9 +7,9 @@ source "$(dirname "$0")/../../utils/common.sh"
 # Arch Linux Chroot User Script
 # Creating default user
 
-ensure_gum
+gum style --border normal --padding "0 1" --border-foreground 34 "Step 3/14: Creating Default User"
 
-gum style --border normal --padding "0 1" --border-foreground 86 "Step 3: Creating default user '${USERNAME}'..."
+gum style --border normal --padding "0 1" --border-foreground '#800080' "Stage 1/1: Creating default user '${USERNAME}'..."
 
 # Create user
 log_info "Creating user ${USERNAME} with home ${HOMEDIR}"

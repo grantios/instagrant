@@ -2,7 +2,7 @@
 # Copy this to config.sh and modify as needed, then source it manually: source config.sh
 
 # Disk configuration
-export DISK="/dev/sda"
+export TARGET_DISK="/dev/sda"
 export TARGET_DIR="/target"
 
 # System configuration

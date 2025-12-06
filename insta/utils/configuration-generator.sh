@@ -15,25 +15,27 @@ generate_config_template() {
 export CONFIG_NAME="${config_name}"
 
 # Disk configuration
-export DISK="/dev/sda"
+export TARGET_DISK="/dev/sda"
 export TARGET_DIR="/target"
 
 # External drives configuration (uncomment and modify as needed)
-# Each drive will be formatted and mounted during installation
-# Format: DEVICE:LABEL:MOUNTPOINT:FILESYSTEM
+# These drives will be partitioned (single partition), formatted as XFS, and mounted during installation
+# Format: DEVICE:MOUNTPOINT:LABEL
+# DEVICE should be the whole drive (e.g., /dev/sdb)
 # export EXTERNAL_DRIVES=(
-#     "/dev/sdb1:data:/drv/data:xfs"
-#     "/dev/sdc1:backup:/mnt/backup:xfs"
+#     "/dev/sdb:/drv/data:data"
+#     "/dev/sdc:/mnt/backup:backup"
 # )
 
 # Preserve drives configuration (uncomment and modify as needed)
 # These drives will be mounted but NOT reformatted during installation
 # Useful for preserving existing data partitions
-# Format: DEVICE:LABEL:MOUNTPOINT:FILESYSTEM
+# Format: DEVICE:MOUNTPOINT
+# DEVICE can be /dev/sdx, LABEL=label, or UUID=uuid
 # export PRESERVE_DRIVES=(
-#     "/dev/sda4:room:/room:xfs"
-#     "/dev/sdb1:data:/drv/data:btrfs"
-#     "/dev/sdc4:backup:/mnt/backup:ext4"
+#     "LABEL=room:/room"
+#     "LABEL=data:/drv/data"
+#     "UUID=12345678-1234-1234-1234-123456789abc:/mnt/backup"
 # )
 
 # System configuration
@@ -49,7 +51,7 @@ export PASSROOT="changeme"
 # Software configuration
 export KERNEL="linux-lts"
 export DESKTOP="plasma"  # plasma, hyprland, none
-export GPU_DRIVER="auto"  # auto, nvidia, amd, intel, modesetting
+export GPU_DRIVER="auto"  # auto, nvidia, nvidia-lts, amd, intel, modesetting
 
 # Additional packages (appended to defaults)
 export EXTRA_PACKAGES=(

@@ -11,6 +11,26 @@ source "$INSTA_TOPLVL/insta/utils/configuration-generator.sh"
 # Source common.sh early for functions
 source "$INSTA_TOPLVL/insta/utils/common.sh"
 
+# Function to check if an official package exists
+check_arch_package() {
+    if pacman -Si "$1" &>/dev/null; then
+        return 0
+    elif pacman -S --print "$1" &>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Function to check if an AUR package exists
+check_aur_package() {
+    if curl -s "https://aur.archlinux.org/rpc/?v=5&type=info&arg=$1" | grep -q '"resultcount":1'; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 # Parse command line options
 if [[ "${1:-}" == "--config-gen" ]]; then
     shift
@@ -82,10 +102,29 @@ fi
 
 # Source configuration file
 source "$CONFIG_FILE"
+log_info "Config loaded from $CONFIG_FILE, EXTERNAL_DRIVES defined: $([[ -v EXTERNAL_DRIVES ]] && echo yes || echo no)"
 combine_config_arrays
 
 # Source common configuration again for package combining logic
 source "$INSTA_TOPLVL/insta/utils/common.sh"
+
+# Check package availability
+log_warn "Checking package availability (this may take a moment)..."
+for pkg in "${EXTRA_PACKAGES[@]}"; do
+    if [[ "$pkg" == " " || -z "$pkg" || "$pkg" == "steam" ]]; then continue; fi
+    if ! check_arch_package "$pkg"; then
+        log_error "Official package '$pkg' not found in Arch repositories"
+        exit 1
+    fi
+done
+for pkg in "${AUR_PACKAGES[@]}"; do
+    if [[ "$pkg" == " " || -z "$pkg" ]]; then continue; fi
+    if ! check_aur_package "$pkg"; then
+        log_error "AUR package '$pkg' not found in AUR"
+        exit 1
+    fi
+done
+log_success "All packages are available"
 
 # Start logging everything to debug.log
 exec > >(stdbuf -o0 tee /dev/tty | stdbuf -o0 sed 's/\x1b\[[0-9;]*m//g' > debug.log)
@@ -112,7 +151,8 @@ if [[ "${1:-}" == "--help" ]]; then
     echo "  1. Run setup (partitioning, mounting, pacstrapping)"
     echo "  2. Enter chroot automatically"
     echo "  3. Run chroot configuration"
-    echo "  4. Exit chroot and provide final instructions"
+    echo "  4. Run post-installation steps"
+    echo "  5. Exit chroot and provide final instructions"
     echo ""
     echo "Options:"
     echo "  --config-gen [NAME]    Generate a config template with skeleton structure (default name: template)"
@@ -146,13 +186,13 @@ fi
 
 check_root
 ensure_gum
-validate_disk "$DISK"
-check_disk_unmounted "$DISK"
+validate_disk "$TARGET_DISK"
+check_disk_unmounted "$TARGET_DISK"
 
 show_config
 
 echo ""
-log_warn "WARNING: This will completely wipe and repartition $DISK!"
+log_warn "WARNING: This will completely wipe and repartition $TARGET_DISK!"
 if ! confirm "Are you absolutely sure you want to proceed?"; then
     log_info "Installation cancelled"
     exit 0
@@ -180,6 +220,15 @@ EOF
 
 # Copy debug.log to the chroot for reference
 cp "$INSTA_TOPLVL/debug.log" ${TARGET_DIR}/tios/insta/
+
+# Run after-chroot steps
+log_step "Phase 3: Post-installation steps"
+for script in "$INSTA_TOPLVL/insta/steps/after/"*.sh; do
+    if [[ -f "$script" ]]; then
+        log_info "Running $(basename "$script")"
+        bash "$script"
+    fi
+done
 
 log_success "Installation complete!"
 echo ""

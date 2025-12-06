@@ -5,14 +5,14 @@
 export CONFIG_NAME="mediacenter"
 
 # Disk configuration
-export DISK="/dev/sda"
+export TARGET_DISK="/dev/sda"
 export TARGET_DIR="/target"
 
 # System configuration
 export TIMEZONE="America/Chicago"
 export LOCALE="en_US.UTF-8"
 export KEYMAP="colemak"
-export HOSTNAME="HTPC"
+export HOSTNAME="MEDIA-CENTER"
 export HOMEDIR="/room/multv"
 export USERNAME="MULTV"
 export PASSWORD="change!"

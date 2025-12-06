@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -11,6 +12,8 @@ fi
 
 # Source common.sh early for functions
 source "$SCRIPT_DIR/../utils/common.sh"
+
+ensure_gum
 
 # Arch Linux Chroot Script
 # Runs all chroot steps in order
@@ -47,7 +50,7 @@ if [[ "${1:-}" == "--help" ]]; then
     echo "  PASSROOT     - Default root password (default: GATEKEEP)"
     echo "  KERNEL       - Kernel installed (default: linux-lts)"
     echo "  DESKTOP      - Desktop environment (default: plasma)"
-    echo "  GPU_DRIVER   - GPU driver: auto, nvidia, amd, intel, modesetting (default: auto)"
+    echo "  GPU_DRIVER   - GPU driver: auto, nvidia, nvidia-lts, amd, intel, modesetting (default: auto)"
     echo "  AUTO_CHROOT_CONFIRM - Skip chroot confirmation (default: true)"
     echo ""
     echo "Usage: $0"

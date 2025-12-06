@@ -13,9 +13,10 @@ fi
 # Arch Linux Setup Pacstrap Script
 # Installing base system
 
-ensure_gum
 
-gum style --border normal --padding "0 1" --border-foreground 86 "Step 5: Installing base system..."
+gum style --border normal --padding "0 1" --border-foreground 34 "Step 3/5: Installing Base System"
+
+gum style --border normal --padding "0 1" --border-foreground '#800080' "Stage 1/1: Installing base system..."
 
 # Install base packages
 log_info "Installing base packages: $BASE_PACKAGES"

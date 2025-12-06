@@ -12,23 +12,28 @@ fi
 # Source common.sh early for functions
 source "$INSTA_TOPLVL/insta/utils/common.sh"
 
+# Source configuration if available
+if [[ -n "${CONFIG_FILE:-}" ]]; then
+    source "$CONFIG_FILE"
+fi
+
 # Arch Linux Setup Script
-# Runs all setup steps in order
+# Runs all setup stages in order
 
 if [[ "${1:-}" == "--help" ]]; then
     echo "Arch Linux Setup Script"
     echo ""
-    echo "Runs the following steps in order:"
-    echo "  1. steps01-drives     - Partition and format drives"
-    echo "  2. steps02-mounts     - Create subvolumes and mount filesystems"
-    echo "  3. steps03-pacstrap   - Install base system"
-    echo "  4. steps04-fstab      - Generate fstab"
-    echo "  5. steps05-copy       - Copy system files"
+    echo "Runs the following stages in order:"
+    echo "  1. 001-drives     - Partition and format drives"
+    echo "  2. 002-mounts     - Create subvolumes and mount filesystems"
+    echo "  3. 003-pacstrap   - Install base system"
+    echo "  4. 004-fstab      - Generate fstab"
+    echo "  5. 005-inject       - Copy system files"
     echo ""
     echo "Usage:"
-    echo "  $0                    - Run all steps"
-    echo "  $0 --redo-step <step> - Rerun a specific step (1-5 or 01-05)"
-    echo "  $0 --redo-from <step> - Rerun from step to end (1-5 or 01-05)"
+    echo "  $0                    - Run all stages"
+    echo "  $0 --redo-step <stage> - Rerun a specific stage (1-5 or 01-05)"
+    echo "  $0 --redo-from <stage> - Rerun from stage to end (1-5 or 01-05)"
     echo ""
     echo "Configuration (set as environment variables):"
     echo "  DISK         - Target disk (default: /dev/sda)"
@@ -69,57 +74,61 @@ combine_config_arrays
 # Source common configuration again for package combining logic
 source "$INSTA_TOPLVL/insta/utils/common.sh"
 
+# Ensure target directory exists
+log_info "Ensuring target directory ${TARGET_DIR} exists..."
+mkdir -p "${TARGET_DIR}"
+
 # Handle --redo-step and --redo-from arguments
 if [[ "${1:-}" == "--redo-step" ]]; then
-    STEP="${2:-}"
-    if [[ -z "$STEP" ]]; then
-        log_error "Error: --redo-step requires a step number (1-5)"
+    STAGE="${2:-}"
+    if [[ -z "$STAGE" ]]; then
+        log_error "Error: --redo-step requires a stage number (1-5)"
         exit 1
     fi
     
-    case "$STEP" in
+    case "$STAGE" in
         1|01) "$INSTA_TOPLVL/insta/steps/setup/001-drives.sh" ;;
         2|02) "$INSTA_TOPLVL/insta/steps/setup/002-mounts.sh" ;;
         3|03) "$INSTA_TOPLVL/insta/steps/setup/003-pacstrap.sh" ;;
         4|04) "$INSTA_TOPLVL/insta/steps/setup/004-fstab.sh" ;;
-        5|05) "$INSTA_TOPLVL/insta/steps/setup/005-copy.sh" ;;
-        *) log_error "Error: Invalid step number $STEP. Must be 1-5 or 01-05." ;;
+        5|05) "$INSTA_TOPLVL/insta/steps/setup/005-inject.sh" ;;
+        *) log_error "Error: Invalid stage number $STAGE. Must be 1-5 or 01-05." ;;
     esac
     exit $?
 elif [[ "${1:-}" == "--redo-from" ]]; then
-    START_STEP="${2:-}"
-    if [[ -z "$START_STEP" ]]; then
-        log_error "Error: --redo-from requires a step number (1-5)"
+    START_STAGE="${2:-}"
+    if [[ -z "$START_STAGE" ]]; then
+        log_error "Error: --redo-from requires a stage number (1-5)"
         exit 1
     fi
     
-    case "$START_STEP" in
+    case "$START_STAGE" in
         1|01)
             "$INSTA_TOPLVL/insta/steps/setup/001-drives.sh"
             "$INSTA_TOPLVL/insta/steps/setup/002-mounts.sh"
             "$INSTA_TOPLVL/insta/steps/setup/003-pacstrap.sh"
             "$INSTA_TOPLVL/insta/steps/setup/004-fstab.sh"
-            "$INSTA_TOPLVL/insta/steps/setup/005-copy.sh"
+            "$INSTA_TOPLVL/insta/steps/setup/005-inject.sh"
             ;;
         2|02)
             "$INSTA_TOPLVL/insta/steps/setup/002-mounts.sh"
             "$INSTA_TOPLVL/insta/steps/setup/003-pacstrap.sh"
             "$INSTA_TOPLVL/insta/steps/setup/004-fstab.sh"
-            "$INSTA_TOPLVL/insta/steps/setup/005-copy.sh"
+            "$INSTA_TOPLVL/insta/steps/setup/005-inject.sh"
             ;;
         3|03)
             "$INSTA_TOPLVL/insta/steps/setup/003-pacstrap.sh"
             "$INSTA_TOPLVL/insta/steps/setup/004-fstab.sh"
-            "$INSTA_TOPLVL/insta/steps/setup/005-copy.sh"
+            "$INSTA_TOPLVL/insta/steps/setup/005-inject.sh"
             ;;
         4|04)
             "$INSTA_TOPLVL/insta/steps/setup/004-fstab.sh"
-            "$INSTA_TOPLVL/insta/steps/setup/005-copy.sh"
+            "$INSTA_TOPLVL/insta/steps/setup/005-inject.sh"
             ;;
         5|05)
-            "$INSTA_TOPLVL/insta/steps/setup/005-copy.sh"
+            "$INSTA_TOPLVL/insta/steps/setup/005-inject.sh"
             ;;
-        *) log_error "Error: Invalid step number $START_STEP. Must be 1-5 or 01-05." ;;
+        *) log_error "Error: Invalid stage number $START_STAGE. Must be 1-5 or 01-05." ;;
     esac
     
     if validate_installation; then
@@ -139,10 +148,10 @@ fi
 validate_timezone "$TIMEZONE"
 
 # Get disk size for confirmation message
-DISK_SIZE=$(get_disk_size "$DISK")
+DISK_SIZE=$(get_disk_size "$TARGET_DISK")
 
 echo ""
-if ! gum confirm "ARE YOU REALLY SURE, THIS WILL COMPLETELY FORMAT $DISK (${DISK_SIZE}) !!!" --prompt.foreground="196"; then
+if ! gum confirm "ARE YOU REALLY SURE, THIS WILL COMPLETELY FORMAT $TARGET_DISK (${DISK_SIZE}) !!!" --prompt.foreground="196"; then
     log_info "Setup cancelled"
     exit 0
 fi
@@ -153,7 +162,7 @@ log_info "Starting setup process..."
 "$INSTA_TOPLVL/insta/steps/setup/002-mounts.sh"
 "$INSTA_TOPLVL/insta/steps/setup/003-pacstrap.sh"
 "$INSTA_TOPLVL/insta/steps/setup/004-fstab.sh"
-"$INSTA_TOPLVL/insta/steps/setup/005-copy.sh"
+"$INSTA_TOPLVL/insta/steps/setup/005-inject.sh"
 
 if validate_installation; then
     log_success "Setup complete!"

@@ -7,9 +7,9 @@ source "$(dirname "$0")/../../utils/common.sh"
 # Arch Linux Chroot Yay Script
 # Installing yay AUR helper
 
-ensure_gum
+gum style --border normal --padding "0 1" --border-foreground 34 "Step 5/14: Installing Yay AUR Helper"
 
-gum style --border normal --padding "0 1" --border-foreground 86 "Step 4: Installing yay AUR helper..."
+gum style --border normal --padding "0 1" --border-foreground '#800080' "Stage 1/1: Installing yay AUR helper..."
 
 # Clone yay as root
 log_info "Cloning yay from AUR..."
