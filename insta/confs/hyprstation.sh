@@ -1,4 +1,4 @@
-# Workstation configuration file for Arch Linux installation
+# Hyprstation configuration file for Arch Linux installation
 # This file is automatically loaded by the installation scripts
 # Copy this to config.sh and modify as needed, then source it manually: source config.sh
 
@@ -6,10 +6,10 @@
 source "$(dirname "${BASH_SOURCE[0]}")/../utils/common.sh"
 
 # Configuration name (used for skel directory)
-export CONFIG_NAME="workstation"
+export CONFIG_NAME="hyprstation"
 
 # Disk configuration
-export TARGET_DISK="/dev/sda"
+export TARGET_DISK="/dev/sdb"
 export TARGET_DIR="/target"
 
 # External drives configuration (uncomment and modify as needed)
@@ -17,8 +17,9 @@ export TARGET_DIR="/target"
 # Format: DEVICE:MOUNTPOINT:LABEL
 # DEVICE should be the whole drive (e.g., /dev/sdb)
 export EXTERNAL_DRIVES=(
-    "/dev/sdb:/drv/data:data"
-    "/dev/sdc:/drv/dada:dada"
+    "/dev/sdc:/drv/data:data"
+    "/dev/sdd:/drv/dada:dada"
+    "/dev/sda:/drv/ship:ship"
 )
 
 # Preserve drives configuration (uncomment and modify as needed)
@@ -36,7 +37,7 @@ export EXTERNAL_DRIVES=(
 export TIMEZONE="America/Chicago"
 export LOCALE="en_US.UTF-8"
 export KEYMAP="colemak"
-export HOSTNAME="GATED"
+export HOSTNAME="HYPRSTATION"
 export USERNAME="STEIN"
 export HOMEDIR="/room/stein"
 export PASSWORD="change!"
@@ -44,8 +45,8 @@ export PASSROOT="change!"
 
 # Software configuration
 export KERNEL="linux-lts"
-export DESKTOP="plasma"  # plasma, hyprland, none
-export GPU_DRIVER="auto"  # auto, nvidia, nvidia-lts, nvidia-open, amd, intel, modesetting
+export DESKTOP="hyprland"  # plasma, hyprland, none
+export GPU_DRIVER="nvidia-lts"  # auto, nvidia, nvidia-lts, nvidia-open, amd, intel, modesetting
 
 # Additional packages and services (appended to defaults)
 # Edit common.sh as-needed if you need to edit base packages
@@ -57,11 +58,8 @@ ensure_insta_toplvl
 # Source the station bundle for common packages
 source "$INSTA_TOPLVL/insta/confs/bundles/station.sh"
 
-# Workstation-specific packages
-EXTRA_PACKAGES+=(
-    "yakuake"
-    "network-manager-applet" "plasma-nm" "proton-vpn-gtk-app"
-)
+# Source the hyprland bundle for Hyprland desktop
+source "$INSTA_TOPLVL/insta/confs/bundles/hypr.sh"
 
 # Boot options (appended to kernel command line)
 # export BOOT_OPTIONS="fbcon=rotate:2"

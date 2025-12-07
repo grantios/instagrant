@@ -1,6 +1,9 @@
 # HTPC Configuration - Hyprland + Kodi Media Center
 # Copy this to config.sh and modify as needed, then source it manually: source config.sh
 
+# Source common utilities
+source "$(dirname "${BASH_SOURCE[0]}")/../utils/common.sh"
+
 # Configuration name (used for skel directory)
 export CONFIG_NAME="mediacenter"
 
@@ -23,6 +26,12 @@ export KERNEL="linux-lts"
 export DESKTOP="hyprland"
 export GPU_DRIVER="auto"
 
+# Ensure INSTA_TOPLVL is set
+ensure_insta_toplvl
+
+# Source the hyprland bundle for Hyprland desktop
+source "$INSTA_TOPLVL/insta/confs/bundles/hypr.sh"
+
 # Media packages
 EXTRA_PACKAGES+=(
     "kodi"
@@ -35,9 +44,7 @@ EXTRA_PACKAGES+=(
     "chromium"
     "pavucontrol"
     "easyeffects"
-    "kitty"
     "dolphin"
-    "wofi"
     "wireplumber"
     "brightnessctl"
 )

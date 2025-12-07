@@ -51,7 +51,7 @@ export PASSROOT="changeme"
 # Software configuration
 export KERNEL="linux-lts"
 export DESKTOP="plasma"  # plasma, hyprland, none
-export GPU_DRIVER="auto"  # auto, nvidia, nvidia-lts, amd, intel, modesetting
+export GPU_DRIVER="auto"  # auto, nvidia, nvidia-lts, nvidia-open, amd, intel, modesetting
 
 # Additional packages (appended to defaults)
 export EXTRA_PACKAGES=(

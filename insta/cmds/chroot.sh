@@ -25,12 +25,12 @@ if [[ "${1:-}" == "--help" ]]; then
     echo "  1. 001-timezone   - Set timezone and locale"
     echo "  2. 002-hostname   - Set hostname"
     echo "  3. 003-user       - Create user and set passwords"
-    echo "  4. 004-mirr       - Configure mirrors"
+    echo "  4. 004-repo      - Configure repositories"
     echo "  5. 005-yay        - Install yay AUR helper"
     echo "  6. 006-aur        - Install AUR packages"
     echo "  7. 007-packages   - Install additional packages"
     echo "  8. 008-services   - Enable services"
-    echo "  9. 009-bootctl    - Install and configure systemd-boot"
+    echo "  9. 009-bootloader - Install and configure boot loader"
     echo " 10. 010-mkinitcpio - Configure mkinitcpio"
     echo " 12. 012-rollback  - Install snapper-rollback"
     echo " 13. 013-skeleton  - Copy configuration skeleton files"
@@ -50,7 +50,7 @@ if [[ "${1:-}" == "--help" ]]; then
     echo "  PASSROOT     - Default root password (default: GATEKEEP)"
     echo "  KERNEL       - Kernel installed (default: linux-lts)"
     echo "  DESKTOP      - Desktop environment (default: plasma)"
-    echo "  GPU_DRIVER   - GPU driver: auto, nvidia, nvidia-lts, amd, intel, modesetting (default: auto)"
+    echo "  GPU_DRIVER   - GPU driver: auto, nvidia, nvidia-lts, nvidia-open, amd, intel, modesetting (default: auto)"
     echo "  AUTO_CHROOT_CONFIRM - Skip chroot confirmation (default: true)"
     echo ""
     echo "Usage: $0"
@@ -93,12 +93,12 @@ STEPS=(
     "001-timezone.sh"
     "002-hostname.sh"
     "003-user.sh"
-    "004-mirr.sh"
+    "004-repo.sh"
     "005-yay.sh"
     "006-aur.sh"
     "007-packages.sh"
     "008-services.sh"
-    "009-bootctl.sh"
+    "009-bootloader.sh"
     "010-mkinitcpio.sh"
     "011-snapper.sh"
     "012-rollback.sh"
@@ -118,12 +118,12 @@ if [[ "${1:-}" == "--redo-step" ]]; then
         1|01) ./insta/steps/chroot/001-timezone.sh ;;
         2|02) ./insta/steps/chroot/002-hostname.sh ;;
         3|03) ./insta/steps/chroot/003-user.sh ;;
-        4|04) ./insta/steps/chroot/004-mirr.sh ;;
+        4|04) ./insta/steps/chroot/004-repo.sh ;;
         5|05) ./insta/steps/chroot/005-yay.sh ;;
         6|06) ./insta/steps/chroot/006-aur.sh ;;
         7|07) ./insta/steps/chroot/007-packages.sh ;;
         8|08) ./insta/steps/chroot/008-services.sh ;;
-        9|09) ./insta/steps/chroot/009-bootctl.sh ;;
+        9|09) ./insta/steps/chroot/009-bootloader.sh ;;
         11) ./insta/steps/chroot/011-snapper.sh ;;
         12) ./insta/steps/chroot/012-rollback.sh ;;
         13) ./insta/steps/chroot/013-skeleton.sh ;;
@@ -192,12 +192,12 @@ log_info "Starting chroot configuration..."
 ./insta/steps/chroot/001-timezone.sh
 ./insta/steps/chroot/002-hostname.sh
 ./insta/steps/chroot/003-user.sh
-./insta/steps/chroot/004-mirr.sh
+./insta/steps/chroot/004-repo.sh
 ./insta/steps/chroot/005-yay.sh
 ./insta/steps/chroot/006-aur.sh
 ./insta/steps/chroot/007-packages.sh
 ./insta/steps/chroot/008-services.sh
-./insta/steps/chroot/009-bootctl.sh
+./insta/steps/chroot/009-bootloader.sh
 ./insta/steps/chroot/010-mkinitcpio.sh
 ./insta/steps/chroot/011-snapper.sh
 ./insta/steps/chroot/012-rollback.sh

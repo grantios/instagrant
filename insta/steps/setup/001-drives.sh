@@ -16,15 +16,30 @@ TARGET_DISK="${1:-$TARGET_DISK}"
 
 # Determine partition naming scheme
 if [[ "$TARGET_DISK" =~ nvme ]] || [[ "$TARGET_DISK" =~ mmcblk ]]; then
-    BOOT_PART="${TARGET_DISK}p1"
-    SWAP_PART="${TARGET_DISK}p2"
-    ROOT_PART="${TARGET_DISK}p3"
-    ROOM_PART="${TARGET_DISK}p4"
+    if [[ "${LEGACY_BOOT:-false}" == "true" ]]; then
+        BOOT_PART="${TARGET_DISK}p1"
+        SWAP_PART="${TARGET_DISK}p2"
+        ROOT_PART="${TARGET_DISK}p3"
+        BIOS_PART="${TARGET_DISK}p4"
+    else
+        BOOT_PART="${TARGET_DISK}p1"
+        SWAP_PART="${TARGET_DISK}p2"
+        ROOT_PART="${TARGET_DISK}p3"
+        ROOM_PART="${TARGET_DISK}p4"
+    fi
 else
-    BOOT_PART="${TARGET_DISK}1"
-    SWAP_PART="${TARGET_DISK}2"
-    ROOT_PART="${TARGET_DISK}3"
-    ROOM_PART="${TARGET_DISK}4"
+    if [[ "${LEGACY_BOOT:-false}" == "true" ]]; then
+        BOOT_PART="${TARGET_DISK}1"
+        SWAP_PART="${TARGET_DISK}2"
+        ROOT_PART="${TARGET_DISK}3"
+        ROOM_PART="${TARGET_DISK}4"
+        BIOS_PART="${TARGET_DISK}5"
+    else
+        BOOT_PART="${TARGET_DISK}1"
+        SWAP_PART="${TARGET_DISK}2"
+        ROOT_PART="${TARGET_DISK}3"
+        ROOM_PART="${TARGET_DISK}4"
+    fi
 fi
 
 echo "=========================================="
@@ -41,10 +56,17 @@ dd if=/dev/zero of="${TARGET_DISK}" bs=1M count=100 status=none
 sgdisk --zap-all "${TARGET_DISK}"
 
 # Create GPT partition table and partitions
-sgdisk -n 1:0:+9G -t 1:ef00 -c 1:"das" "${TARGET_DISK}"         # EFI (/boot)
-sgdisk -n 2:0:+33G -t 2:8200 -c 2:"Linux swap" "${TARGET_DISK}"         # Swap
-sgdisk -n 3:0:+123G -t 3:8300 -c 3:"Linux root" "${TARGET_DISK}"         # Root (btrfs)
-sgdisk -n 4:0:0 -t 4:8300 -c 4:"Linux room" "${TARGET_DISK}"             # Room (xfs, remaining space)
+if [[ "${LEGACY_BOOT:-false}" == "true" ]]; then
+    sgdisk -n 1:0:+9G -t 1:8300 -c 1:"das" "${TARGET_DISK}"         # /boot (ext4)
+    sgdisk -n 2:0:+33G -t 2:8200 -c 2:"Linux swap" "${TARGET_DISK}"         # Swap
+    sgdisk -n 3:0:-3.3M -t 3:8300 -c 3:"Linux root" "${TARGET_DISK}"         # Root (btrfs, leaving 3.3M at end)
+    sgdisk -n 4:0:0 -t 4:ef02 -c 4:"Linux BIOS" "${TARGET_DISK}"             # BIOS Boot (3.3M at end)
+else
+    sgdisk -n 1:0:+9G -t 1:ef00 -c 1:"das" "${TARGET_DISK}"         # EFI (/boot)
+    sgdisk -n 2:0:+33G -t 2:8200 -c 2:"Linux swap" "${TARGET_DISK}"         # Swap
+    sgdisk -n 3:0:+123G -t 3:8300 -c 3:"Linux root" "${TARGET_DISK}"         # Root (btrfs)
+    sgdisk -n 4:0:0 -t 4:8300 -c 4:"Linux room" "${TARGET_DISK}"             # Room (xfs, remaining space)
+fi
 
 # Inform kernel of partition changes
 partprobe "${TARGET_DISK}"
@@ -53,9 +75,15 @@ partprobe "${TARGET_DISK}"
 
 gum style --border normal --padding "0 1" --border-foreground '#800080' "Stage 2/2: Formatting partitions..."
 
-# Format EFI partition
-log_info "Formatting EFI partition ${BOOT_PART} as FAT32..."
-mkfs.vfat -F 32 -n das "${BOOT_PART}"
+if [[ "${LEGACY_BOOT:-false}" == "true" ]]; then
+    # Format /boot partition
+    log_info "Formatting /boot partition ${BOOT_PART} as EXT4..."
+    mkfs.ext4 -L das "${BOOT_PART}"
+else
+    # Format EFI partition
+    log_info "Formatting EFI partition ${BOOT_PART} as FAT32..."
+    mkfs.vfat -F 32 -n das "${BOOT_PART}"
+fi
 
 # Format swap partition
 log_info "Formatting swap partition ${SWAP_PART}..."
@@ -68,19 +96,23 @@ dd if=/dev/zero of="${ROOT_PART}" bs=1M count=1 status=none
 mkfs.btrfs -f -L root "${ROOT_PART}"
 
 # Check for room partition
-DISK_SIZE=$(blockdev --getsize64 "${TARGET_DISK}")
-USED_SIZE=$((9000000000 + 33000000000 + 123000000000))
-REMAINING=$((DISK_SIZE - USED_SIZE))
-MIN_ROOM_SIZE=$((10000000000))
-
-USE_ROOM_PARTITION=false
-if [ ${REMAINING} -gt ${MIN_ROOM_SIZE} ]; then
-    log_info "Sufficient space available for separate /room partition"
-    log_info "Formatting room partition ${ROOM_PART} as XFS..."
-    mkfs.xfs -f -L room "${ROOM_PART}"
-    USE_ROOM_PARTITION=true
+if [[ "${LEGACY_BOOT:-false}" == "true" ]]; then
+    USE_ROOM_PARTITION=false
 else
-    log_info "Using @room subvolume (insufficient space for separate partition)"
+    DISK_SIZE=$(blockdev --getsize64 "${TARGET_DISK}")
+    USED_SIZE=$((9000000000 + 33000000000 + 123000000000))
+    REMAINING=$((DISK_SIZE - USED_SIZE))
+    MIN_ROOM_SIZE=$((10000000000))
+
+    USE_ROOM_PARTITION=false
+    if [ ${REMAINING} -gt ${MIN_ROOM_SIZE} ]; then
+        log_info "Sufficient space available for separate /room partition"
+        log_info "Formatting room partition ${ROOM_PART} as XFS..."
+        mkfs.xfs -f -L room "${ROOM_PART}"
+        USE_ROOM_PARTITION=true
+    else
+        log_info "Using @room subvolume (insufficient space for separate partition)"
+    fi
 fi
 
 # Store variables for later scripts

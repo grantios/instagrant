@@ -67,6 +67,12 @@ check_root() {
     fi
 }
 
+# Ensure INSTA_TOPLVL is set
+ensure_insta_toplvl() {
+    INSTA_TOPLVL="$(cd "$(dirname "${BASH_SOURCE[1]}")/../.." && pwd)"
+    export INSTA_TOPLVL
+}
+
 # Install gum if not present
 ensure_gum() {
     if ! command -v gum &> /dev/null; then
@@ -283,6 +289,10 @@ install_gpu_driver() {
         nvidia-lts)
             log_info "Installing NVIDIA LTS drivers..."
             retry_pacman pacman -S --noconfirm nvidia-lts nvidia-utils nvidia-settings nvtop cuda
+            ;;
+        nvidia-open)
+            log_info "Installing NVIDIA open-source drivers..."
+            retry_pacman pacman -S --noconfirm nvidia-open nvidia-utils nvidia-settings nvtop cuda
             ;;
         amd)
             log_info "Installing AMD drivers..."

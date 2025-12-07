@@ -1,6 +1,9 @@
 # Smart Clock Configuration - Hyprland + Godot Development
 # Copy this to config.sh and modify as needed, then source it manually: source config.sh
 
+# Source common utilities
+source "$(dirname "${BASH_SOURCE[0]}")/../utils/common.sh"
+
 # Configuration name (used for skel directory)
 export CONFIG_NAME="smartclock"
 
@@ -23,13 +26,17 @@ export KERNEL="linux-lts"
 export DESKTOP="hyprland"
 export GPU_DRIVER="auto"
 
+# Ensure INSTA_TOPLVL is set
+ensure_insta_toplvl
+
+# Source the hyprland bundle for Hyprland desktop
+source "$INSTA_TOPLVL/insta/confs/bundles/hypr.sh"
+
 # Development packages (Godot engine included)
 EXTRA_PACKAGES+=(
     "godot"
-    "kitty"
     "dolphin"
     "chromium"
-    "wofi"
     "wireplumber"
     "brightnessctl"
 )

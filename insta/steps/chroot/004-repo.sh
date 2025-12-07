@@ -4,10 +4,10 @@ set -euo pipefail
 # Source common configuration
 source "$(dirname "$0")/../../utils/common.sh"
 
-# Arch Linux Chroot Mirror Script
-# Configuring mirrors for pacman using reflector
+# Arch Linux Chroot Repository Script
+# Configuring repositories and mirrors for pacman
 
-gum style --border normal --padding "0 1" --border-foreground 34 "Step 4/14: Configuring Pacman Mirrors"
+gum style --border normal --padding "0 1" --border-foreground 34 "Step 4/14: Configuring Pacman Repositories"
 
 gum style --border normal --padding "0 1" --border-foreground '#800080' "Stage 1/1: Configuring pacman mirrors..."
 
