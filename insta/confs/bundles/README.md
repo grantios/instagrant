@@ -49,3 +49,9 @@ Then add only the configuration-specific packages after sourcing the bundle.
 - **Maintainability**: Updates to common packages only need to be made in one place
 - **Consistency**: Ensures all workstation variants have the same base packages
 - **Flexibility**: Each configuration can still add its own specific packages
+
+
+## Known Issues.
+- Legacy Boot via CSM (Basically) Doesn't Work Yet.
+- Not nearly as modular as I want. 
+  - (I want to make a libtios to do basic operations ultimately)
