@@ -13,9 +13,9 @@ source "$(dirname "$0")/../../utils/common.sh"
 # Arch Linux Chroot Packages Script
 # Installing additional packages
 
-gum style --border normal --padding "0 1" --border-foreground 34 "Step 7/14: Installing Additional Packages"
+mark_step "Step 7/14: Installing Additional Packages"
 
-gum style --border normal --padding "0 1" --border-foreground '#800080' "Stage 1/1: Installing additional packages..."
+mark_stage "Stage 1/1: Installing additional packages..."
 
 # Install extra packages
 log_info "Installing extra packages: ${EXTRA_PACKAGES[*]}"

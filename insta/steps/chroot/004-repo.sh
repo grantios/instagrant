@@ -7,9 +7,9 @@ source "$(dirname "$0")/../../utils/common.sh"
 # Arch Linux Chroot Repository Script
 # Configuring repositories and mirrors for pacman
 
-gum style --border normal --padding "0 1" --border-foreground 34 "Step 4/14: Configuring Pacman Repositories"
+mark_step "Step 4/14: Configuring Pacman Repositories"
 
-gum style --border normal --padding "0 1" --border-foreground '#800080' "Stage 1/1: Configuring pacman mirrors..."
+mark_stage "Stage 1/1: Configuring pacman mirrors..."
 
 # Enable multilib repository for 32-bit packages
 log_info "Enabling multilib repository..."

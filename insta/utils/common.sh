@@ -59,6 +59,15 @@ log_step() {
     echo -e "${PURPLE}[STEP]${NC} $1"
 }
 
+# Gum styling functions
+mark_step() {
+    gum style --border normal --padding "0 1" --border-foreground 34 "$1"
+}
+
+mark_stage() {
+    gum style --border normal --padding "0 1" --border-foreground '#800080' "$1"
+}
+
 # Check if running as root
 check_root() {
     if [[ $EUID -ne 0 ]]; then

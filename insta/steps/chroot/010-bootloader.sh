@@ -7,9 +7,9 @@ source "$(dirname "$0")/../../utils/common.sh"
 # Arch Linux Chroot Boot Loader Script
 # Installing and configuring boot loader (systemd-boot or GRUB)
 
-gum style --border normal --padding "0 1" --border-foreground 34 "Step 9/14: Installing and Configuring Boot Loader"
+mark_step "Step 10/14: Installing and Configuring Boot Loader"
 
-gum style --border normal --padding "0 1" --border-foreground '#800080' "Stage 1/1: Installing and configuring boot loader..."
+mark_stage "Stage 1/1: Installing and configuring boot loader..."
 
 # Install systemd-boot with --esp-path=/boot
 # Check if we should use legacy BIOS boot
@@ -29,6 +29,20 @@ if [[ "${LEGACY_BOOT:-false}" == "true" ]]; then
     
     # Get root disk (remove partition number)
     ROOT_DISK=$(echo "$ROOT_DEVICE" | sed 's/p[0-9]*$//' | sed 's/[0-9]*$//')
+    
+    # Check partition table type
+    PT_TYPE=$(blkid -p -s PTTYPE -o value "$ROOT_DISK" 2>/dev/null || echo "")
+    if [[ "$PT_TYPE" == "gpt" ]]; then
+        # For GPT legacy boot, ensure BIOS boot partition exists
+        BIOS_BOOT_PART=$(sgdisk -p "$ROOT_DISK" | grep "EF02" | awk '{print $1}' | head -1)
+        if [[ -z "$BIOS_BOOT_PART" ]]; then
+            echo "ERROR: GPT disk detected for legacy boot but no BIOS boot partition (EF02) found."
+            echo "Please ensure a BIOS boot partition is created as per https://wiki.archlinux.org/title/GRUB#GUID_Partition_Table_(GPT)_specific_instructions"
+            exit 1
+        fi
+    elif [[ "$PT_TYPE" != "dos" && "$PT_TYPE" != "" ]]; then
+        echo "WARNING: Unknown partition table type $PT_TYPE on $ROOT_DISK"
+    fi
     
     # Install GRUB for BIOS
     pacman -S --noconfirm grub
@@ -77,8 +91,8 @@ EOF
     # Create Arch Linux boot entry
     cat > /boot/loader/entries/arch.conf << EOF
 title   GrantiOS 2025.Q4
-linux   /vmlinuz-linux-lts
-initrd  /initramfs-linux-lts.img
+linux   /vmlinuz-${KERNEL}
+initrd  /initramfs-${KERNEL}.img
 options ${BOOT_OPTS}
 EOF
 
@@ -91,8 +105,8 @@ EOF
     # Create fallback boot entry
     cat > /boot/loader/entries/arch-fallback.conf << EOF
 title   GrantiOS 2025.Q4 (fallback)
-linux   /vmlinuz-linux-lts
-initrd  /initramfs-linux-lts-fallback.img
+linux   /vmlinuz-${KERNEL}
+initrd  /initramfs-${KERNEL}-fallback.img
 options ${FALLBACK_OPTS}
 EOF
 

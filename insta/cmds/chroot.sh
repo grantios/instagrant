@@ -30,8 +30,9 @@ if [[ "${1:-}" == "--help" ]]; then
     echo "  6. 006-aur        - Install AUR packages"
     echo "  7. 007-packages   - Install additional packages"
     echo "  8. 008-services   - Enable services"
-    echo "  9. 009-bootloader - Install and configure boot loader"
-    echo " 10. 010-mkinitcpio - Configure mkinitcpio"
+    echo "  9. 009-mkinitcpio - Configure mkinitcpio"
+    echo " 10. 010-bootloader - Install and configure boot loader"
+    echo " 11. 011-snapper   - Install snapper"
     echo " 12. 012-rollback  - Install snapper-rollback"
     echo " 13. 013-skeleton  - Copy configuration skeleton files"
     echo " 14. 014-cleanup   - Final cleanup tasks"
@@ -98,8 +99,8 @@ STEPS=(
     "006-aur.sh"
     "007-packages.sh"
     "008-services.sh"
-    "009-bootloader.sh"
-    "010-mkinitcpio.sh"
+    "009-mkinitcpio.sh"
+    "010-bootloader.sh"
     "011-snapper.sh"
     "012-rollback.sh"
     "013-skeleton.sh"
@@ -123,7 +124,8 @@ if [[ "${1:-}" == "--redo-step" ]]; then
         6|06) ./insta/steps/chroot/006-aur.sh ;;
         7|07) ./insta/steps/chroot/007-packages.sh ;;
         8|08) ./insta/steps/chroot/008-services.sh ;;
-        9|09) ./insta/steps/chroot/009-bootloader.sh ;;
+        9|09) ./insta/steps/chroot/009-mkinitcpio.sh ;;
+        10) ./insta/steps/chroot/010-bootloader.sh ;;
         11) ./insta/steps/chroot/011-snapper.sh ;;
         12) ./insta/steps/chroot/012-rollback.sh ;;
         13) ./insta/steps/chroot/013-skeleton.sh ;;
@@ -197,8 +199,8 @@ log_info "Starting chroot configuration..."
 ./insta/steps/chroot/006-aur.sh
 ./insta/steps/chroot/007-packages.sh
 ./insta/steps/chroot/008-services.sh
-./insta/steps/chroot/009-bootloader.sh
-./insta/steps/chroot/010-mkinitcpio.sh
+./insta/steps/chroot/009-mkinitcpio.sh
+./insta/steps/chroot/010-bootloader.sh
 ./insta/steps/chroot/011-snapper.sh
 ./insta/steps/chroot/012-rollback.sh
 ./insta/steps/chroot/013-skeleton.sh

@@ -7,9 +7,9 @@ source "$(dirname "$0")/../../utils/common.sh"
 # Arch Linux Chroot Snapper Script
 # Configuring snapper
 
-gum style --border normal --padding "0 1" --border-foreground 34 "Step 11/14: Configuring Snapper"
+mark_step "Step 11/14: Configuring Snapper"
 
-gum style --border normal --padding "0 1" --border-foreground '#800080' "Stage 1/1: Configuring snapper..."
+mark_stage "Stage 1/1: Configuring snapper..."
 
 pacman -S --noconfirm snapper snap-pac
 

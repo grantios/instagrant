@@ -7,9 +7,9 @@ source "$(dirname "$0")/../../utils/common.sh"
 # Arch Linux Chroot User Script
 # Creating default user
 
-gum style --border normal --padding "0 1" --border-foreground 34 "Step 3/14: Creating Default User"
+mark_step "Step 3/14: Creating Default User"
 
-gum style --border normal --padding "0 1" --border-foreground '#800080' "Stage 1/1: Creating default user '${USERNAME}'..."
+mark_stage "Stage 1/1: Creating default user '${USERNAME}'..."
 
 # Create user
 log_info "Creating user ${USERNAME} with home ${HOMEDIR}"
@@ -18,14 +18,14 @@ useradd -d "${HOMEDIR}" -G wheel,audio,video,optical,storage,power -s /usr/bin/z
 chown -R "${USERNAME}:${USERNAME}" "${HOMEDIR}"
 
 # Set default password
-gum style --foreground 226 "Setting default password for user '${USERNAME}' to: ${PASSWORD}"
+log_warn "Setting default password for user '${USERNAME}' to: ${PASSWORD}"
 echo "${USERNAME}:${PASSWORD}" | chpasswd
-gum style --foreground 196 --bold "IMPORTANT: Change this password after first login! Run: passwd"
+log_warn "IMPORTANT: Change this password after first login! Run: passwd"
 
 # Set root password
-log_info "Setting default password for root to: ${PASSROOT}"
+log_warn "Setting default password for root to: ${PASSROOT}"
 echo "root:${PASSROOT}" | chpasswd
-gum style --foreground 196 --bold "IMPORTANT: Change the root password after installation! Run: passwd"
+log_warn "IMPORTANT: Change the root password after installation! Run: passwd"
 
 # Setup room directory permissions
 log_info "Setting ownership of /room to ${USERNAME}"

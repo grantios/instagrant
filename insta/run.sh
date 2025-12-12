@@ -93,6 +93,27 @@ shift 2
 
 export CONFIG_FILE
 
+# Parse additional options
+REDO_SETUP_FROM=""
+REDO_CHROOT_FROM=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --redo-from-setup-step)
+            REDO_SETUP_FROM="$2"
+            shift 2
+            ;;
+        --redo-from-chroot-step)
+            REDO_CHROOT_FROM="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: $0 --config <name> [--redo-from-setup-step <step>] [--redo-from-chroot-step <step>] [--config-gen [NAME]]"
+            exit 1
+            ;;
+    esac
+done
+
 # Source default config first (if it exists)
 DEFAULT_CONFIG="$INSTA_TOPLVL/insta/confs/default.sh"
 if [[ -f "$DEFAULT_CONFIG" ]]; then
@@ -161,6 +182,8 @@ if [[ "${1:-}" == "--help" ]]; then
     echo "                         Packages, AUR packages, and services are combined (not overwritten)"
     echo "                         FILE can be with or without .sh extension"
     echo "  --config-list          List all available configuration files"
+    echo "  --redo-from-setup-step <step> - Rerun setup from specific step (1-5)"
+    echo "  --redo-from-chroot-step <step> - Rerun chroot from specific step (1-14)"
     echo ""
     echo "Configuration (set as environment variables or in config file):"
     echo "  DISK         - Target disk (default: /dev/sda)"
@@ -174,48 +197,61 @@ if [[ "${1:-}" == "--help" ]]; then
     echo "  DESKTOP      - Desktop environment (default: plasma)"
     echo "  AUTO_CHROOT_CONFIRM - Skip chroot confirmation (default: true)"
     echo ""
-    echo "Usage: $0 --config <name> [--config-gen [NAME]]"
+    echo "Usage: $0 --config <name> [--redo-from-setup-step <step>] [--redo-from-chroot-step <step>] [--config-gen [NAME]]"
     echo "Example: $0 --config workstation"
     echo "Example: $0 --config homeserver --config-gen"
     echo "Example: $0 --config-list"
-    echo "Example: DISK=/dev/sdb KERNEL=linux-zen $0 --config mediacenter"
+    echo "Example: $0 --config devestation --redo-from-chroot-step 10"
     echo ""
     echo "WARNING: This will completely wipe and repartition the target disk!"
     exit 0
 fi
 
-check_root
-ensure_gum
-validate_disk "$TARGET_DISK"
-check_disk_unmounted "$TARGET_DISK"
+if [[ -z "$REDO_SETUP_FROM" && -z "$REDO_CHROOT_FROM" ]]; then
+    check_root
+    ensure_gum
+    validate_disk "$TARGET_DISK"
+    check_disk_unmounted "$TARGET_DISK"
 
-show_config
+    show_config
 
-echo ""
-log_warn "WARNING: This will completely wipe and repartition $TARGET_DISK!"
-if ! confirm "Are you absolutely sure you want to proceed?"; then
-    log_info "Installation cancelled"
-    exit 0
+    echo ""
+    log_warn "WARNING: This will completely wipe and repartition $TARGET_DISK!"
+    if ! confirm "Are you absolutely sure you want to proceed?"; then
+        log_info "Installation cancelled"
+        exit 0
+    fi
 fi
 
 log_step "Starting full installation process..."
 
 # Run setup
-log_step "Phase 1: Setup (partitioning, mounting, pacstrapping)"
-"$INSTA_TOPLVL/insta/cmds/setup.sh"
+if [[ -z "$REDO_CHROOT_FROM" ]]; then
+    log_step "Phase 1: Setup (partitioning, mounting, pacstrapping)"
+    if [[ -n "$REDO_SETUP_FROM" ]]; then
+        "$INSTA_TOPLVL/insta/cmds/setup.sh" --redo-from "$REDO_SETUP_FROM"
+    else
+        "$INSTA_TOPLVL/insta/cmds/setup.sh"
+    fi
 
-# Verify that the scripts were copied correctly
-if [[ ! -f "${TARGET_DIR}/tios/insta/cmds/chroot.sh" ]]; then
-    log_error "Setup failed: chroot script not found at ${TARGET_DIR}/tios/insta/cmds/chroot.sh"
-    log_error "Please check the setup process and try again"
-    exit 1
+    # Verify that the scripts were copied correctly
+    if [[ ! -f "${TARGET_DIR}/tios/insta/cmds/chroot.sh" ]]; then
+        log_error "Setup failed: chroot script not found at ${TARGET_DIR}/tios/insta/cmds/chroot.sh"
+        log_error "Please check the setup process and try again"
+        exit 1
+    fi
 fi
 
 # Enter chroot and run configuration
 log_step "Phase 2: Chroot configuration"
+if [[ -n "$REDO_CHROOT_FROM" ]]; then
+    CHROOT_CMD="./insta/cmds/chroot.sh --redo-from $REDO_CHROOT_FROM"
+else
+    CHROOT_CMD="./insta/cmds/chroot.sh"
+fi
 arch-chroot ${TARGET_DIR} /bin/bash 2>&1 <<EOF | stdbuf -o0 tee /dev/tty | stdbuf -o0 sed 's/\x1b\[[0-9;]*m//g' >> debug.log
 cd /tios
-./insta/cmds/chroot.sh
+$CHROOT_CMD
 EOF
 
 # Copy debug.log to the chroot for reference

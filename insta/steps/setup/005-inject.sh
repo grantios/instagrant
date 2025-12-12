@@ -12,9 +12,9 @@ if [[ -z "${INSTA_TOPLVL:-}" ]]; then
     INSTA_TOPLVL="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../" && pwd)"
 fi
 
-gum style --border normal --padding "0 1" --border-foreground 34 "Step 5/5: Injecting System Files"
+mark_step "Step 5/5: Injecting System Files"
 
-gum style --border normal --padding "0 1" --border-foreground '#800080' "Stage 1/1: Injecting tios system files..."
+mark_stage "Stage 1/1: Injecting tios system files..."
 
 # Copy the entire repository to ${TARGET_DIR}/tios
 if [ -d "$INSTA_TOPLVL" ]; then

@@ -20,7 +20,7 @@ if [[ "$TARGET_DISK" =~ nvme ]] || [[ "$TARGET_DISK" =~ mmcblk ]]; then
         BOOT_PART="${TARGET_DISK}p1"
         SWAP_PART="${TARGET_DISK}p2"
         ROOT_PART="${TARGET_DISK}p3"
-        BIOS_PART="${TARGET_DISK}p4"
+        ROOM_PART="${TARGET_DISK}p4"
     else
         BOOT_PART="${TARGET_DISK}p1"
         SWAP_PART="${TARGET_DISK}p2"
@@ -33,7 +33,6 @@ else
         SWAP_PART="${TARGET_DISK}2"
         ROOT_PART="${TARGET_DISK}3"
         ROOM_PART="${TARGET_DISK}4"
-        BIOS_PART="${TARGET_DISK}5"
     else
         BOOT_PART="${TARGET_DISK}1"
         SWAP_PART="${TARGET_DISK}2"
@@ -46,24 +45,27 @@ echo "=========================================="
 echo "Setting up drives on ${TARGET_DISK}"
 echo "=========================================="
 
-gum style --border normal --padding "0 1" --border-foreground 34 "Step 1/5: Partitioning and Formatting Drives"
+mark_step "Step 1/5: Partitioning and Formatting Drives"
 
-gum style --border normal --padding "0 1" --border-foreground '#800080' "Stage 1/2: Partitioning ${TARGET_DISK}..."
+mark_stage "Stage 1/2: Partitioning ${TARGET_DISK}..."
 
 # Wipe existing partition table
 wipefs -af "${TARGET_DISK}"
 dd if=/dev/zero of="${TARGET_DISK}" bs=1M count=100 status=none
-sgdisk --zap-all "${TARGET_DISK}"
 
-# Create GPT partition table and partitions
 if [[ "${LEGACY_BOOT:-false}" == "true" ]]; then
-    sgdisk -n 1:0:+9G -t 1:8300 -c 1:"das" "${TARGET_DISK}"         # /boot (ext4)
-    sgdisk -n 2:0:+33G -t 2:8200 -c 2:"Linux swap" "${TARGET_DISK}"         # Swap
-    sgdisk -n 3:0:-3.3M -t 3:8300 -c 3:"Linux root" "${TARGET_DISK}"         # Root (btrfs, leaving 3.3M at end)
-    sgdisk -n 4:0:0 -t 4:ef02 -c 4:"Linux BIOS" "${TARGET_DISK}"             # BIOS Boot (3.3M at end)
+    # Create MBR partition table for legacy BIOS boot
+    parted -s "${TARGET_DISK}" mklabel msdos
+    parted -s "${TARGET_DISK}" mkpart primary ext4 1MiB 9GiB
+    parted -s "${TARGET_DISK}" set 1 boot on
+    parted -s "${TARGET_DISK}" mkpart primary linux-swap 9GiB 42GiB
+    parted -s "${TARGET_DISK}" mkpart primary btrfs 42GiB 165GiB
+    parted -s "${TARGET_DISK}" mkpart primary xfs 165GiB 100%
 else
-    sgdisk -n 1:0:+9G -t 1:ef00 -c 1:"das" "${TARGET_DISK}"         # EFI (/boot)
-    sgdisk -n 2:0:+33G -t 2:8200 -c 2:"Linux swap" "${TARGET_DISK}"         # Swap
+    # Create GPT partition table for UEFI
+    sgdisk --zap-all "${TARGET_DISK}"
+    sgdisk -n 1:0:+9G -t 1:ef00 -c 1:"das" "${TARGET_DISK}"                  # EFI (/boot)
+    sgdisk -n 2:0:+33G -t 2:8200 -c 2:"Linux swap" "${TARGET_DISK}"          # Swap
     sgdisk -n 3:0:+123G -t 3:8300 -c 3:"Linux root" "${TARGET_DISK}"         # Root (btrfs)
     sgdisk -n 4:0:0 -t 4:8300 -c 4:"Linux room" "${TARGET_DISK}"             # Room (xfs, remaining space)
 fi
@@ -73,7 +75,7 @@ partprobe "${TARGET_DISK}"
 sleep 2
 partprobe "${TARGET_DISK}"
 
-gum style --border normal --padding "0 1" --border-foreground '#800080' "Stage 2/2: Formatting partitions..."
+mark_stage "Stage 2/2: Formatting partitions..."
 
 if [[ "${LEGACY_BOOT:-false}" == "true" ]]; then
     # Format /boot partition
@@ -97,7 +99,20 @@ mkfs.btrfs -f -L root "${ROOT_PART}"
 
 # Check for room partition
 if [[ "${LEGACY_BOOT:-false}" == "true" ]]; then
+    DISK_SIZE=$(blockdev --getsize64 "${TARGET_DISK}")
+    USED_SIZE=$((9000000000 + 33000000000 + 123000000000))  # boot 9G + swap 33G + root 123G
+    REMAINING=$((DISK_SIZE - USED_SIZE))
+    MIN_ROOM_SIZE=$((10000000000))
+
     USE_ROOM_PARTITION=false
+    if [ ${REMAINING} -gt ${MIN_ROOM_SIZE} ]; then
+        log_info "Sufficient space available for separate /room partition"
+        log_info "Formatting room partition ${ROOM_PART} as XFS..."
+        mkfs.xfs -f -L room "${ROOM_PART}"
+        USE_ROOM_PARTITION=true
+    else
+        log_info "Using @room subvolume (insufficient space for separate partition)"
+    fi
 else
     DISK_SIZE=$(blockdev --getsize64 "${TARGET_DISK}")
     USED_SIZE=$((9000000000 + 33000000000 + 123000000000))

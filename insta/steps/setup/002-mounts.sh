@@ -32,9 +32,9 @@ USE_ROOM_PARTITION=$(cat /tmp/use_room_partition 2>/dev/null || echo "false")
 
 sudo pacman --noconfirm -Sy gum
 
-gum style --border normal --padding "0 1" --border-foreground 34 "Step 2/5: Creating Subvolumes and Mounting Filesystems"
+mark_step "Step 2/5: Creating Subvolumes and Mounting Filesystems"
 
-gum style --border normal --padding "0 1" --border-foreground '#800080' "Stage 1/2: Creating btrfs subvolumes..."
+mark_stage "Stage 1/2: Creating btrfs subvolumes..."
 
 # Mount root partition temporarily
 mount "${ROOT_MOUNT}" "${TARGET_DIR}"
@@ -53,7 +53,7 @@ fi
 # Unmount to remount with proper subvolumes
 umount ${TARGET_DIR}
 
-gum style --border normal --padding "0 1" --border-foreground '#800080' "Stage 2/2: Mounting filesystems..."
+mark_stage "Stage 2/2: Mounting filesystems..."
 
 # Mount options for btrfs (optimized for SSD/NVMe)
 BTRFS_OPTS="noatime,compress=zstd:1,space_cache=v2,discard=async"
